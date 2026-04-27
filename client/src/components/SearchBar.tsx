@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   onPick: (prediction: Prediction) => void;
+  onFocus?: () => void;
 };
 
-export function SearchBar({ onPick }: Props) {
+export function SearchBar({ onPick, onFocus }: Props) {
   const [q, setQ] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [open, setOpen] = useState(false);
@@ -53,7 +54,10 @@ export function SearchBar({ onPick }: Props) {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
         <input
           value={q}
-          onFocus={() => predictions.length > 0 && setOpen(true)}
+          onFocus={() => {
+            onFocus?.();
+            if (predictions.length > 0) setOpen(true);
+          }}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search a place to eat or drink…"
           className="h-11 w-full rounded-full border border-ink/10 bg-white pl-10 pr-9 text-base shadow-sm focus:outline-none focus:border-terracotta/50 focus:ring-2 focus:ring-terracotta/20"

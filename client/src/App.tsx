@@ -186,7 +186,14 @@ export function App() {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3 pt-[max(env(safe-area-inset-top),0.75rem)]">
         <div className="pointer-events-auto flex items-center gap-2">
           <div className="flex-1">
-            <SearchBar onPick={handlePickPrediction} />
+            <SearchBar
+              onPick={handlePickPrediction}
+              onFocus={() => {
+                setSelected(null);
+                setPendingDetails(null);
+                setEditing(null);
+              }}
+            />
           </div>
           <CityJump
             onJump={(c) =>
