@@ -1,24 +1,24 @@
-import { useState } from 'react';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { api } from '@/lib/api';
-import { setToken } from '@/lib/auth';
+import { useState } from "react";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { api } from "@/lib/api";
+import { setToken } from "@/lib/auth";
 
 export function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+    setError("");
     setBusy(true);
     try {
       const token = await api.login(password);
       setToken(token);
       onUnlock();
     } catch {
-      setError('Wrong password');
+      setError("Wrong password");
       setBusy(false);
     }
   }
@@ -30,9 +30,9 @@ export function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-sm"
       >
         <div>
-          <h1 className="text-2xl font-semibold">EatList</h1>
+          <h1 className="text-2xl font-semibold">Euro Summer 26</h1>
           <p className="text-sm text-ink/60 mt-1">
-            Italy & Greece — enter password to continue
+            Chuck your password in here
           </p>
         </div>
         <Input
@@ -49,7 +49,7 @@ export function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
           size="lg"
           disabled={busy || !password}
         >
-          {busy ? 'Checking…' : 'Unlock'}
+          {busy ? "Checking…" : "Unlock"}
         </Button>
       </form>
     </div>
