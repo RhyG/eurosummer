@@ -1,6 +1,9 @@
 export type Category = 'restaurant' | 'bar' | 'cafe' | 'bakery' | 'other';
 export type Country = 'italy' | 'greece' | 'other';
 
+export type TimeOfWeek = { day: number; hour: number; minute: number };
+export type OpeningPeriod = { open: TimeOfWeek; close?: TimeOfWeek };
+
 export type Place = {
   id: string;
   name: string;
@@ -14,6 +17,8 @@ export type Place = {
   visited: boolean;
   createdAt: number;
   googlePlaceId?: string;
+  openingPeriods?: OpeningPeriod[];
+  photoNames?: string[];
 };
 
 export type PlacesFile = {

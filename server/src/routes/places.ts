@@ -7,7 +7,12 @@ import {
   listPlaces,
   updatePlace,
 } from '../store.js';
-import type { Category, Country, Place } from '../types.js';
+import type {
+  Category,
+  Country,
+  OpeningPeriod,
+  Place,
+} from '../types.js';
 
 const CATEGORIES: readonly Category[] = [
   'restaurant',
@@ -23,6 +28,31 @@ function isCategory(v: unknown): v is Category {
 }
 function isCountry(v: unknown): v is Country {
   return typeof v === 'string' && (COUNTRIES as readonly string[]).includes(v);
+}
+
+function isTimeOfWeek(v: unknown): boolean {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.day === 'number' &&
+    typeof o.hour === 'number' &&
+    typeof o.minute === 'number'
+  );
+}
+
+function isOpeningPeriods(v: unknown): v is OpeningPeriod[] {
+  if (!Array.isArray(v)) return false;
+  for (const p of v) {
+    if (!p || typeof p !== 'object') return false;
+    const o = p as Record<string, unknown>;
+    if (!isTimeOfWeek(o.open)) return false;
+    if (o.close !== undefined && !isTimeOfWeek(o.close)) return false;
+  }
+  return true;
+}
+
+function isStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.every((s) => typeof s === 'string');
 }
 
 function parseDraft(input: unknown): Omit<Place, 'id' | 'createdAt'> | null {
@@ -45,6 +75,10 @@ function parseDraft(input: unknown): Omit<Place, 'id' | 'createdAt'> | null {
     visited: o.visited === true,
     googlePlaceId:
       typeof o.googlePlaceId === 'string' ? o.googlePlaceId : undefined,
+    openingPeriods: isOpeningPeriods(o.openingPeriods)
+      ? o.openingPeriods
+      : undefined,
+    photoNames: isStringArray(o.photoNames) ? o.photoNames : undefined,
   };
 }
 
@@ -87,6 +121,14 @@ function parsePatch(input: unknown): Partial<Place> | null {
   if (o.visited !== undefined) {
     if (typeof o.visited !== 'boolean') return null;
     patch.visited = o.visited;
+  }
+  if (o.openingPeriods !== undefined) {
+    if (!isOpeningPeriods(o.openingPeriods)) return null;
+    patch.openingPeriods = o.openingPeriods;
+  }
+  if (o.photoNames !== undefined) {
+    if (!isStringArray(o.photoNames)) return null;
+    patch.photoNames = o.photoNames;
   }
   return patch;
 }

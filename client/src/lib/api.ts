@@ -88,6 +88,10 @@ export const api = {
   exportUrl(): string {
     return '/api/places/export';
   },
+
+  photoUrl(name: string, maxWidth = 600): string {
+    return `/api/search/photo?name=${encodeURIComponent(name)}&maxWidth=${maxWidth}`;
+  },
 };
 
 export { UnauthorizedError };

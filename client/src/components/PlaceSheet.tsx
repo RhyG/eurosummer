@@ -93,6 +93,19 @@ export function PlaceSheet({
           <Drawer.Title className="sr-only">{place.name}</Drawer.Title>
           <div className="mx-auto mt-2 mb-2 h-1.5 w-10 rounded-full bg-ink/15" />
           <div className="overflow-y-auto px-5 pb-5 pt-2">
+            {(info?.photoNames?.length ?? 0) > 0 && (
+              <div className="-mx-5 mb-4 flex gap-1 overflow-x-auto px-5">
+                {info!.photoNames!.slice(0, 5).map((name) => (
+                  <img
+                    key={name}
+                    src={api.photoUrl(name, 800)}
+                    alt=""
+                    loading="lazy"
+                    className="h-44 w-auto shrink-0 rounded-xl bg-ink/5 object-cover"
+                  />
+                ))}
+              </div>
+            )}
             <div className="mb-3 flex items-center gap-2">
               <span
                 className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-cream"

@@ -29,10 +29,11 @@ type Props = {
   onPickPlace: (place: Place) => void;
   previewLocation: { lat: number; lng: number } | null;
   maptilerKey: string | null;
+  userLocation: { lat: number; lng: number } | null;
 };
 
 export const Map = forwardRef<MapHandle, Props>(function Map(
-  { places, onPickPlace, previewLocation, maptilerKey },
+  { places, onPickPlace, previewLocation, maptilerKey, userLocation },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -186,39 +187,28 @@ export const Map = forwardRef<MapHandle, Props>(function Map(
       (map.getSource('places') as GeoJSONSource).setData(data);
     });
 
-    // User location.
-    let watchId: number | null = null;
-    if ('geolocation' in navigator) {
-      const userEl = document.createElement('div');
-      userEl.className =
-        'h-3.5 w-3.5 rounded-full bg-blue-500 ring-4 ring-blue-500/30 shadow';
-      const marker = new maplibregl.Marker({ element: userEl });
-      userMarkerRef.current = marker;
-
-      let centeredOnce = false;
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          marker.setLngLat([longitude, latitude]).addTo(map);
-          if (!centeredOnce) {
-            centeredOnce = true;
-            if (placesRef.current.length === 0) {
-              map.flyTo({ center: [longitude, latitude], zoom: 13 });
-            }
-          }
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
-      );
-    }
-
     return () => {
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
+  // Render user location marker from prop.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !userLocation) return;
+    if (!userMarkerRef.current) {
+      const el = document.createElement('div');
+      el.className =
+        'h-3.5 w-3.5 rounded-full bg-blue-500 ring-4 ring-blue-500/30 shadow';
+      userMarkerRef.current = new maplibregl.Marker({ element: el });
+    }
+    userMarkerRef.current
+      .setLngLat([userLocation.lng, userLocation.lat])
+      .addTo(map);
+  }, [userLocation]);
 
   // Push places into the source whenever they change.
   useEffect(() => {

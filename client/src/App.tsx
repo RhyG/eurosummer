@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { List, MapIcon } from 'lucide-react';
 import { Map, type MapHandle } from './components/Map';
+import { ListView } from './components/ListView';
 import { SearchBar } from './components/SearchBar';
 import { CategoryFilter } from './components/CategoryFilter';
 import { CityJump } from './components/CityJump';
@@ -11,9 +13,12 @@ import { EditDialog } from './components/EditDialog';
 import { CATEGORIES } from './lib/categories';
 import { getToken } from './lib/auth';
 import { api, UnauthorizedError } from './lib/api';
+import { isOpenNow } from './lib/openingHours';
+import { useUserLocation } from './lib/userLocation';
 import type { Category, Place, PlaceDetails, Prediction } from './types';
 
 const SHEET_PADDING = 360;
+type ViewMode = 'map' | 'list';
 
 export function App() {
   const [authed, setAuthed] = useState<boolean>(() => Boolean(getToken()));
@@ -24,6 +29,8 @@ export function App() {
   const [activeCats, setActiveCats] = useState<Set<Category>>(
     new Set(CATEGORIES),
   );
+  const [openNowOnly, setOpenNowOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [pendingDetails, setPendingDetails] = useState<PlaceDetails | null>(
     null,
   );
@@ -31,6 +38,7 @@ export function App() {
   const [editing, setEditing] = useState<Place | null>(null);
   const [hasFitBounds, setHasFitBounds] = useState(false);
   const mapRef = useRef<MapHandle | null>(null);
+  const userLocation = useUserLocation();
 
   const refresh = useCallback(async () => {
     try {
@@ -70,10 +78,13 @@ export function App() {
     }
   }, [places, hasFitBounds]);
 
-  const visiblePlaces = useMemo(
-    () => places.filter((p) => activeCats.has(p.category)),
-    [places, activeCats],
-  );
+  const visiblePlaces = useMemo(() => {
+    return places.filter((p) => {
+      if (!activeCats.has(p.category)) return false;
+      if (openNowOnly && isOpenNow(p.openingPeriods) === false) return false;
+      return true;
+    });
+  }, [places, activeCats, openNowOnly]);
 
   const toggleCat = (c: Category) => {
     setActiveCats((prev) => {
@@ -89,6 +100,7 @@ export function App() {
     try {
       const details = await api.details(p.placeId);
       setPendingDetails(details);
+      setViewMode('map');
       mapRef.current?.flyTo({
         lat: details.lat,
         lng: details.lng,
@@ -118,6 +130,8 @@ export function App() {
       category,
       notes: notes || undefined,
       visited: false,
+      openingPeriods: pendingDetails.openingPeriods ?? undefined,
+      photoNames: pendingDetails.photoNames ?? undefined,
     };
     try {
       const { place } = await api.createPlace(draft);
@@ -171,17 +185,28 @@ export function App() {
 
   return (
     <div className="relative h-full w-full">
-      <Map
-        ref={mapRef}
-        places={visiblePlaces}
-        onPickPlace={setSelected}
-        maptilerKey={maptilerKey}
-        previewLocation={
-          pendingDetails
-            ? { lat: pendingDetails.lat, lng: pendingDetails.lng }
-            : null
-        }
-      />
+      {viewMode === 'map' ? (
+        <Map
+          ref={mapRef}
+          places={visiblePlaces}
+          onPickPlace={setSelected}
+          maptilerKey={maptilerKey}
+          userLocation={userLocation}
+          previewLocation={
+            pendingDetails
+              ? { lat: pendingDetails.lat, lng: pendingDetails.lng }
+              : null
+          }
+        />
+      ) : (
+        <div className="absolute inset-0 bg-cream pt-[8.5rem]">
+          <ListView
+            places={visiblePlaces}
+            userLocation={userLocation}
+            onPick={setSelected}
+          />
+        </div>
+      )}
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3 pt-[max(env(safe-area-inset-top),0.75rem)]">
         <div className="pointer-events-auto flex items-center gap-2">
@@ -196,14 +221,26 @@ export function App() {
             />
           </div>
           <CityJump
-            onJump={(c) =>
+            onJump={(c) => {
+              setViewMode('map');
               mapRef.current?.flyTo({
                 lat: c.lat,
                 lng: c.lng,
                 zoom: c.zoom,
-              })
-            }
+              });
+            }}
           />
+          <button
+            onClick={() => setViewMode((v) => (v === 'map' ? 'list' : 'map'))}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink/70 shadow-sm hover:bg-ink/5"
+            aria-label={viewMode === 'map' ? 'Switch to list' : 'Switch to map'}
+          >
+            {viewMode === 'map' ? (
+              <List className="h-5 w-5" />
+            ) : (
+              <MapIcon className="h-5 w-5" />
+            )}
+          </button>
           <SettingsMenu onLogout={() => setAuthed(false)} />
         </div>
         <div className="pointer-events-auto">
@@ -211,6 +248,8 @@ export function App() {
             active={activeCats}
             toggle={toggleCat}
             places={places}
+            openNowOnly={openNowOnly}
+            onToggleOpenNow={() => setOpenNowOnly((v) => !v)}
           />
         </div>
       </div>

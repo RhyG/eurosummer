@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { env } from '../env.js';
-import type { Category, Country } from '../types.js';
+import type { Category, Country, OpeningPeriod } from '../types.js';
 
 const AUTOCOMPLETE_URL =
   'https://places.googleapis.com/v1/places:autocomplete';
 const DETAILS_URL = 'https://places.googleapis.com/v1/places';
+const PHOTO_NAME_RE = /^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/;
 
 type AutocompletePrediction = {
   placeId: string;
@@ -37,12 +38,19 @@ type GoogleDetailsResp = {
     shortText?: string;
     longText?: string;
   }>;
+  regularOpeningHours?: GoogleHours;
+  photos?: GooglePhoto[];
 };
 
+type GoogleTimeOfWeek = { day?: number; hour?: number; minute?: number };
+type GooglePeriod = { open?: GoogleTimeOfWeek; close?: GoogleTimeOfWeek };
 type GoogleHours = {
   openNow?: boolean;
   weekdayDescriptions?: string[];
+  periods?: GooglePeriod[];
 };
+
+type GooglePhoto = { name?: string };
 
 type GoogleInfoResp = {
   rating?: number;
@@ -55,7 +63,53 @@ type GoogleInfoResp = {
   businessStatus?: string;
   regularOpeningHours?: GoogleHours;
   currentOpeningHours?: GoogleHours;
+  photos?: GooglePhoto[];
 };
+
+function normalizePeriods(hours: GoogleHours | undefined): OpeningPeriod[] | null {
+  if (!hours?.periods) return null;
+  const out: OpeningPeriod[] = [];
+  for (const p of hours.periods) {
+    if (
+      !p.open ||
+      typeof p.open.day !== 'number' ||
+      typeof p.open.hour !== 'number'
+    ) {
+      continue;
+    }
+    const open = {
+      day: p.open.day,
+      hour: p.open.hour,
+      minute: p.open.minute ?? 0,
+    };
+    if (
+      p.close &&
+      typeof p.close.day === 'number' &&
+      typeof p.close.hour === 'number'
+    ) {
+      out.push({
+        open,
+        close: {
+          day: p.close.day,
+          hour: p.close.hour,
+          minute: p.close.minute ?? 0,
+        },
+      });
+    } else {
+      out.push({ open });
+    }
+  }
+  return out.length ? out : null;
+}
+
+function normalizePhotoNames(photos: GooglePhoto[] | undefined): string[] | null {
+  if (!photos) return null;
+  const names = photos
+    .map((p) => p.name)
+    .filter((n): n is string => typeof n === 'string' && PHOTO_NAME_RE.test(n))
+    .slice(0, 6);
+  return names.length ? names : null;
+}
 
 function categoryFromTypes(types: string[]): Category {
   const set = new Set(types);
@@ -145,6 +199,7 @@ searchRoutes.get('/info/:placeId', async (c) => {
     'businessStatus',
     'regularOpeningHours',
     'currentOpeningHours',
+    'photos',
   ].join(',');
 
   const res = await fetch(`${DETAILS_URL}/${encodeURIComponent(placeId)}`, {
@@ -175,7 +230,28 @@ searchRoutes.get('/info/:placeId', async (c) => {
     businessStatus: data.businessStatus ?? null,
     openNow: hours?.openNow ?? null,
     weekdayDescriptions: hours?.weekdayDescriptions ?? null,
+    openingPeriods: normalizePeriods(data.regularOpeningHours),
+    photoNames: normalizePhotoNames(data.photos),
   });
+});
+
+searchRoutes.get('/photo', async (c) => {
+  const name = c.req.query('name');
+  const maxWidth = c.req.query('maxWidth') ?? '600';
+  if (!name || !PHOTO_NAME_RE.test(name)) {
+    return c.json({ error: 'invalid_name' }, 400);
+  }
+  const width = Math.min(Math.max(parseInt(maxWidth, 10) || 600, 50), 2000);
+  const url = `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${width}&key=${encodeURIComponent(env.googlePlacesApiKey)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    return c.json({ error: 'google_error', status: res.status }, 502);
+  }
+  const ct = res.headers.get('content-type') ?? 'image/jpeg';
+  const buf = await res.arrayBuffer();
+  c.header('Content-Type', ct);
+  c.header('Cache-Control', 'public, max-age=86400, immutable');
+  return c.body(buf);
 });
 
 searchRoutes.get('/details/:placeId', async (c) => {
@@ -188,6 +264,8 @@ searchRoutes.get('/details/:placeId', async (c) => {
     'primaryType',
     'types',
     'addressComponents',
+    'regularOpeningHours',
+    'photos',
   ].join(',');
 
   const res = await fetch(`${DETAILS_URL}/${encodeURIComponent(placeId)}`, {
@@ -219,5 +297,7 @@ searchRoutes.get('/details/:placeId', async (c) => {
     lng: data.location?.longitude ?? 0,
     suggestedCategory: categoryFromTypes(types),
     country: countryFromComponents(data.addressComponents),
+    openingPeriods: normalizePeriods(data.regularOpeningHours),
+    photoNames: normalizePhotoNames(data.photos),
   });
 });
