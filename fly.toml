@@ -1,24 +1,29 @@
-app = "eatlist"
-primary_region = "cdg"
+# fly.toml app configuration file generated for eurosummer on 2026-04-27T03:49:47Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'eurosummer'
+primary_region = 'syd'
 
 [build]
 
 [env]
-  PORT = "8080"
-  DATA_DIR = "/data"
+  DATA_DIR = '/data'
+  PORT = '8080'
+
+[[mounts]]
+  source = 'eatlist_data'
+  destination = '/data'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
-[[mounts]]
-  source = "eatlist_data"
-  destination = "/data"
-
 [[vm]]
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
   cpus = 1
   memory_mb = 256
