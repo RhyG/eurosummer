@@ -90,7 +90,9 @@ export const api = {
   },
 
   photoUrl(name: string, maxWidth = 600): string {
-    return `/api/search/photo?name=${encodeURIComponent(name)}&maxWidth=${maxWidth}`;
+    const token = getToken();
+    const t = token ? `&token=${encodeURIComponent(token)}` : '';
+    return `/api/search/photo?name=${encodeURIComponent(name)}&maxWidth=${maxWidth}${t}`;
   },
 };
 
