@@ -8,11 +8,11 @@ import { CATEGORY_META } from '@/lib/categories';
 import { MEDITERRANEAN_VIEW } from '@/lib/cities';
 import type { Place } from '@/types';
 
-const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY as string | undefined;
-
-const STYLE_URL = MAPTILER_KEY
-  ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`
-  : 'https://demotiles.maplibre.org/style.json';
+function styleUrl(key: string | null): string {
+  return key
+    ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${key}`
+    : 'https://demotiles.maplibre.org/style.json';
+}
 
 export type MapHandle = {
   flyTo: (opts: {
@@ -28,10 +28,11 @@ type Props = {
   places: Place[];
   onPickPlace: (place: Place) => void;
   previewLocation: { lat: number; lng: number } | null;
+  maptilerKey: string | null;
 };
 
 export const Map = forwardRef<MapHandle, Props>(function Map(
-  { places, onPickPlace, previewLocation },
+  { places, onPickPlace, previewLocation, maptilerKey },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -78,7 +79,7 @@ export const Map = forwardRef<MapHandle, Props>(function Map(
     if (!containerRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE_URL,
+      style: styleUrl(maptilerKey),
       center: [MEDITERRANEAN_VIEW.lng, MEDITERRANEAN_VIEW.lat],
       zoom: MEDITERRANEAN_VIEW.zoom,
       attributionControl: { compact: true },

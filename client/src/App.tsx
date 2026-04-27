@@ -17,6 +17,9 @@ const SHEET_PADDING = 360;
 
 export function App() {
   const [authed, setAuthed] = useState<boolean>(() => Boolean(getToken()));
+  const [maptilerKey, setMaptilerKey] = useState<string | null | undefined>(
+    undefined,
+  );
   const [places, setPlaces] = useState<Place[]>([]);
   const [activeCats, setActiveCats] = useState<Set<Category>>(
     new Set(CATEGORIES),
@@ -41,6 +44,23 @@ export function App() {
   useEffect(() => {
     if (authed) refresh();
   }, [authed, refresh]);
+
+  useEffect(() => {
+    if (!authed) return;
+    let cancelled = false;
+    api
+      .config()
+      .then(({ maptilerKey }) => {
+        if (!cancelled) setMaptilerKey(maptilerKey);
+      })
+      .catch((err) => {
+        if (err instanceof UnauthorizedError) setAuthed(false);
+        else if (!cancelled) setMaptilerKey(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authed]);
 
   // Auto-fit to saved places once on first load (if any).
   useEffect(() => {
@@ -141,12 +161,21 @@ export function App() {
 
   if (!authed) return <PasswordGate onUnlock={() => setAuthed(true)} />;
 
+  if (maptilerKey === undefined) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-ink/50">
+        Loading…
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full">
       <Map
         ref={mapRef}
         places={visiblePlaces}
         onPickPlace={setSelected}
+        maptilerKey={maptilerKey}
         previewLocation={
           pendingDetails
             ? { lat: pendingDetails.lat, lng: pendingDetails.lng }

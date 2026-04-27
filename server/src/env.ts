@@ -26,5 +26,6 @@ export const env = {
   authPassword: required('AUTH_PASSWORD'),
   authToken: required('AUTH_TOKEN'),
   googlePlacesApiKey: required('GOOGLE_PLACES_API_KEY'),
+  maptilerKey: optional('MAPTILER_KEY'),
   clientDist: optional('CLIENT_DIST', '../../client/dist'),
 };

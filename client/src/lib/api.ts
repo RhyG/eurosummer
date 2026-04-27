@@ -42,6 +42,10 @@ export const api = {
     return data.token;
   },
 
+  config(): Promise<{ maptilerKey: string | null }> {
+    return request('/api/config');
+  },
+
   listPlaces(): Promise<{ places: Place[] }> {
     return request('/api/places');
   },

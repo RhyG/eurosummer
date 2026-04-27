@@ -11,8 +11,6 @@ RUN npm install
 
 # Build client
 FROM deps AS build-client
-ARG VITE_MAPTILER_KEY
-ENV VITE_MAPTILER_KEY=$VITE_MAPTILER_KEY
 COPY client client
 RUN npm run build --workspace=client
 

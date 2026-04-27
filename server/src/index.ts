@@ -21,6 +21,9 @@ app.route('/api/auth', authRoutes);
 
 const apiAuthed = new Hono();
 apiAuthed.use('*', requireAuth);
+apiAuthed.get('/config', (c) =>
+  c.json({ maptilerKey: env.maptilerKey || null }),
+);
 apiAuthed.route('/places', placeRoutes);
 apiAuthed.route('/search', searchRoutes);
 app.route('/api', apiAuthed);

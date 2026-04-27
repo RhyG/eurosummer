@@ -28,7 +28,7 @@ The Vite dev server proxies `/api` → `http://localhost:8080`.
 | `AUTH_PASSWORD` | server | password for the gate |
 | `AUTH_TOKEN` | server | random string returned to the browser after auth |
 | `GOOGLE_PLACES_API_KEY` | server | Google Cloud API key (Places API New) |
-| `VITE_MAPTILER_KEY` | client build-time | MapTiler key for vector tiles |
+| `MAPTILER_KEY` | server | MapTiler key for vector tiles (served to client at runtime via `/api/config`) |
 | `DATA_DIR` | server | defaults to `./data` locally, `/data` on Fly |
 
 Generate a random `AUTH_TOKEN`:
@@ -45,7 +45,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 2. After verifying email, go to **Account → API keys**.
 3. Click the default key (or create one). Copy the value.
 4. (Optional, recommended for production) Restrict the key under **Allowed origins** to your Fly URL, e.g. `https://eatlist.fly.dev`.
-5. Set it locally in `.env` as `VITE_MAPTILER_KEY=...`. For Fly, pass it as a Docker build arg (see deploy section).
+5. Set it locally in `.env` as `MAPTILER_KEY=...`. For Fly, set it as a runtime secret: `fly secrets set MAPTILER_KEY=...`.
 
 Free tier: 100k tile requests / month. More than enough for a 2-week trip.
 
@@ -92,13 +92,14 @@ Set secrets:
 fly secrets set \
   AUTH_PASSWORD='your-password' \
   AUTH_TOKEN="$(node -e 'console.log(require(\"crypto\").randomBytes(32).toString(\"hex\"))')" \
-  GOOGLE_PLACES_API_KEY='AIza...'
+  GOOGLE_PLACES_API_KEY='AIza...' \
+  MAPTILER_KEY='YOUR_MAPTILER_KEY'
 ```
 
-The MapTiler key is baked into the client bundle at build time, so pass it as a Docker build arg:
+Then deploy:
 
 ```bash
-fly deploy --build-arg VITE_MAPTILER_KEY=YOUR_MAPTILER_KEY
+fly deploy
 ```
 
 After deploy, open `https://<your-app>.fly.dev`, enter the password, and start saving places.
