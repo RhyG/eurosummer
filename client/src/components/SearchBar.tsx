@@ -60,6 +60,10 @@ export function SearchBar({ onPick, onFocus }: Props) {
           }}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search a place to eat or drink…"
+          autoCorrect="off"
+          autoCapitalize="off"
+          autoComplete="off"
+          spellCheck={false}
           className="h-11 w-full rounded-full border border-ink/10 bg-white pl-10 pr-9 text-base shadow-sm focus:outline-none focus:border-terracotta/50 focus:ring-2 focus:ring-terracotta/20"
         />
         {q && (
@@ -75,21 +79,25 @@ export function SearchBar({ onPick, onFocus }: Props) {
         )}
       </div>
       {open && (predictions.length > 0 || busy) && (
-        <div className="absolute left-0 right-0 top-full mt-2 max-h-80 overflow-y-auto rounded-2xl border border-ink/10 bg-white shadow-lg">
+        <div
+          onMouseDown={(e) => e.preventDefault()}
+          className="absolute left-0 right-0 top-full mt-2 max-h-80 overflow-y-auto rounded-2xl border border-ink/10 bg-white shadow-lg"
+        >
           {busy && predictions.length === 0 && (
             <div className="px-4 py-3 text-sm text-ink/50">Searching…</div>
           )}
           {predictions.map((p) => (
             <button
               key={p.placeId}
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault();
                 onPick(p);
                 setOpen(false);
                 setQ('');
                 setPredictions([]);
               }}
               className={cn(
-                'flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left hover:bg-ink/5',
+                'flex w-full flex-col items-start gap-0.5 px-4 py-3.5 text-left hover:bg-ink/5 active:bg-ink/10',
               )}
             >
               <span className="text-sm font-medium">{p.primaryText}</span>
