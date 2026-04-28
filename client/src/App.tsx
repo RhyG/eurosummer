@@ -26,9 +26,7 @@ export function App() {
     undefined,
   );
   const [places, setPlaces] = useState<Place[]>([]);
-  const [activeCats, setActiveCats] = useState<Set<Category>>(
-    new Set(CATEGORIES),
-  );
+  const [activeCats, setActiveCats] = useState<Set<Category>>(new Set());
   const [openNowOnly, setOpenNowOnly] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [pendingDetails, setPendingDetails] = useState<PlaceDetails | null>(
@@ -80,7 +78,7 @@ export function App() {
 
   const visiblePlaces = useMemo(() => {
     return places.filter((p) => {
-      if (!activeCats.has(p.category)) return false;
+      if (activeCats.size > 0 && !activeCats.has(p.category)) return false;
       if (openNowOnly && isOpenNow(p.openingPeriods) === false) return false;
       return true;
     });
@@ -91,7 +89,6 @@ export function App() {
       const next = new Set(prev);
       if (next.has(c)) next.delete(c);
       else next.add(c);
-      if (next.size === 0) return new Set(CATEGORIES); // never leave empty
       return next;
     });
   };
