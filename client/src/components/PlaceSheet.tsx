@@ -94,7 +94,7 @@ export function PlaceSheet({
           <div className="mx-auto mt-2 mb-2 h-1.5 w-10 rounded-full bg-ink/15" />
           <div className="overflow-y-auto px-5 pb-5 pt-2">
             {(info?.photoNames?.length ?? 0) > 0 && (
-              <div className="-mx-5 mb-4 flex gap-1 overflow-x-auto px-5">
+              <div className="no-scrollbar -mx-5 mb-4 flex gap-1 overflow-x-auto px-5">
                 {info!.photoNames!.slice(0, 5).map((name) => (
                   <img
                     key={name}
@@ -201,7 +201,7 @@ export function PlaceSheet({
               </p>
             )}
 
-            <div className="mt-5 grid grid-cols-1 gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <a
                 href={appleMapsUrl({
                   name: place.name,
@@ -210,83 +210,78 @@ export function PlaceSheet({
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
               >
-                <Button className="w-full" size="lg">
-                  <ExternalLink className="h-4 w-4" />
-                  Open in Apple Maps
-                </Button>
+                <ExternalLink className="h-3.5 w-3.5" />
+                Apple Maps
               </a>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => onToggleVisited(place)}
+              {info?.phone && (
+                <a
+                  href={`tel:${info.phone.replace(/\s/g, '')}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
                 >
-                  {place.visited ? (
-                    <>
-                      <RotateCcw className="h-4 w-4" /> Unvisit
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4" /> Visited
-                    </>
-                  )}
-                </Button>
-                <Button variant="secondary" onClick={() => onEdit(place)}>
-                  <Pencil className="h-4 w-4" /> Edit
-                </Button>
-                {confirm ? (
-                  <Button
-                    variant="danger"
-                    onClick={async () => {
-                      await onDelete(place.id);
-                      setConfirm(false);
-                    }}
-                  >
-                    Confirm
-                  </Button>
-                ) : (
-                  <Button variant="ghost" onClick={() => setConfirm(true)}>
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </Button>
-                )}
-              </div>
+                  <Phone className="h-3.5 w-3.5" />
+                  {info.phone}
+                </a>
+              )}
+              {info?.website && (
+                <a
+                  href={info.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  Website
+                </a>
+              )}
+              {info?.googleMapsUri && (
+                <a
+                  href={info.googleMapsUri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
+                >
+                  <MapPinned className="h-3.5 w-3.5" />
+                  Google Maps
+                </a>
+              )}
             </div>
 
-            {(info?.phone || info?.website || info?.googleMapsUri) && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {info.phone && (
-                  <a
-                    href={`tel:${info.phone.replace(/\s/g, '')}`}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
-                  >
-                    <Phone className="h-3.5 w-3.5" />
-                    {info.phone}
-                  </a>
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => onToggleVisited(place)}
+              >
+                {place.visited ? (
+                  <>
+                    <RotateCcw className="h-4 w-4" /> Unvisit
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" /> Visited
+                  </>
                 )}
-                {info.website && (
-                  <a
-                    href={info.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                    Website
-                  </a>
-                )}
-                {info.googleMapsUri && (
-                  <a
-                    href={info.googleMapsUri}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-ink/80 hover:bg-ink/5"
-                  >
-                    <MapPinned className="h-3.5 w-3.5" />
-                    Google Maps
-                  </a>
-                )}
-              </div>
-            )}
+              </Button>
+              <Button variant="secondary" onClick={() => onEdit(place)}>
+                <Pencil className="h-4 w-4" /> Edit
+              </Button>
+              {confirm ? (
+                <Button
+                  variant="danger"
+                  onClick={async () => {
+                    await onDelete(place.id);
+                    setConfirm(false);
+                  }}
+                >
+                  Confirm
+                </Button>
+              ) : (
+                <Button variant="ghost" onClick={() => setConfirm(true)}>
+                  <Trash2 className="h-4 w-4" /> Delete
+                </Button>
+              )}
+            </div>
           </div>
         </Drawer.Content>
       </Drawer.Portal>
