@@ -3,9 +3,8 @@ import { List, MapIcon } from 'lucide-react';
 import { Map, type MapHandle } from './components/Map';
 import { ListView } from './components/ListView';
 import { SearchBar } from './components/SearchBar';
-import { CategoryFilter } from './components/CategoryFilter';
+import { FiltersMenu } from './components/FiltersMenu';
 import { CityJump } from './components/CityJump';
-import { SettingsMenu } from './components/SettingsMenu';
 import { PasswordGate } from './components/PasswordGate';
 import { SaveDialog } from './components/SaveDialog';
 import { PlaceSheet } from './components/PlaceSheet';
@@ -196,7 +195,7 @@ export function App() {
           }
         />
       ) : (
-        <div className="absolute inset-0 bg-cream pt-[8.5rem]">
+        <div className="absolute inset-0 bg-cream pt-[4.75rem]">
           <ListView
             places={visiblePlaces}
             userLocation={userLocation}
@@ -238,15 +237,13 @@ export function App() {
               <MapIcon className="h-5 w-5" />
             )}
           </button>
-          <SettingsMenu onLogout={() => setAuthed(false)} />
-        </div>
-        <div className="pointer-events-auto">
-          <CategoryFilter
+          <FiltersMenu
             active={activeCats}
             toggle={toggleCat}
-            places={places}
             openNowOnly={openNowOnly}
             onToggleOpenNow={() => setOpenNowOnly((v) => !v)}
+            places={places}
+            onLogout={() => setAuthed(false)}
           />
         </div>
       </div>
