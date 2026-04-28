@@ -16,6 +16,7 @@ export function SearchBar({ onPick, onFocus }: Props) {
   const [busy, setBusy] = useState(false);
   const debounceRef = useRef<number | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!q.trim()) {
@@ -53,6 +54,7 @@ export function SearchBar({ onPick, onFocus }: Props) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
         <input
+          ref={inputRef}
           value={q}
           onFocus={() => {
             onFocus?.();
@@ -91,6 +93,10 @@ export function SearchBar({ onPick, onFocus }: Props) {
               key={p.placeId}
               onMouseDown={(e) => {
                 e.preventDefault();
+                inputRef.current?.blur();
+                if (document.activeElement instanceof HTMLElement) {
+                  document.activeElement.blur();
+                }
                 onPick(p);
                 setOpen(false);
                 setQ('');

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import {
   ChevronDown,
@@ -41,6 +41,7 @@ function todayWeekdayIndex(): number {
 }
 
 export function SaveDialog({ details, onClose, onSave }: Props) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const [category, setCategory] = useState<Category>(
     details?.suggestedCategory ?? 'restaurant',
   );
@@ -82,6 +83,23 @@ export function SaveDialog({ details, onClose, onSave }: Props) {
     };
   }, [details?.googlePlaceId]);
 
+  useEffect(() => {
+    if (!details) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target;
+      if (
+        target instanceof Node &&
+        contentRef.current &&
+        !contentRef.current.contains(target)
+      ) {
+        onClose();
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () =>
+      document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [details, onClose]);
+
   if (!details) return null;
   const selectedMeta = CATEGORY_META[category];
   const country = COUNTRY_META[details.country];
@@ -104,6 +122,7 @@ export function SaveDialog({ details, onClose, onSave }: Props) {
     <Drawer.Root open onOpenChange={(o) => !o && onClose()} modal={false}>
       <Drawer.Portal>
         <Drawer.Content
+          ref={contentRef}
           className="fixed bottom-0 left-0 right-0 z-50 flex max-h-[50vh] flex-col rounded-t-2xl bg-cream pb-[env(safe-area-inset-bottom)] shadow-sheet outline-none"
         >
           <Drawer.Title className="sr-only">Save {details.name}</Drawer.Title>
