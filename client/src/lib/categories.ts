@@ -31,7 +31,7 @@ const KNOWN_CATEGORY_META: Record<string, CategoryMeta> = {
   Burgers: { label: "Burgers", emoji: "🍔", color: "#8B5E34" },
   Indian: { label: "Indian", emoji: "🍛", color: "#C77728" },
   Bakery: { label: "Bakery", emoji: "🥐", color: "#D9B382" },
-  Cafe: { label: "Cafe", emoji: "☕", color: "#fffc5c" },
+  Cafe: { label: "Cafe", emoji: "☕", color: "#6eb829" },
   Bar: { label: "Bar", emoji: "🍷", color: "#6B7C3A" },
   Other: { label: "Other", emoji: "📍", color: "#6B7280" },
 };

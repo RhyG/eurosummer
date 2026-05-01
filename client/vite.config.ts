@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'EatList',
-        short_name: 'EatList',
+        name: 'Eat List',
+        short_name: 'Eat List',
         description: 'Map of places to eat and drink anywhere',
         theme_color: '#C65D3A',
         background_color: '#F7F1E5',
