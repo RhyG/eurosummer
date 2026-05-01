@@ -9,12 +9,22 @@ import { PasswordGate } from './components/PasswordGate';
 import { SaveDialog } from './components/SaveDialog';
 import { PlaceSheet } from './components/PlaceSheet';
 import { EditDialog } from './components/EditDialog';
-import { DEFAULT_CATEGORIES, normalizeCategoryName } from './lib/categories';
+import { CategoryManagerSheet } from './components/CategoryManagerSheet';
+import {
+  DEFAULT_CATEGORY_DEFINITIONS,
+  normalizeCategoryName,
+} from './lib/categories';
 import { getToken } from './lib/auth';
 import { api, UnauthorizedError } from './lib/api';
 import { isOpenNow } from './lib/openingHours';
 import { useUserLocation } from './lib/userLocation';
-import type { Category, Place, PlaceDetails, Prediction } from './types';
+import type {
+  Category,
+  CategoryDefinition,
+  Place,
+  PlaceDetails,
+  Prediction,
+} from './types';
 
 const SHEET_PADDING = 360;
 type ViewMode = 'map' | 'list';
@@ -25,8 +35,8 @@ export function App() {
     undefined,
   );
   const [places, setPlaces] = useState<Place[]>([]);
-  const [categories, setCategories] = useState<Category[]>(
-    DEFAULT_CATEGORIES.slice(),
+  const [categories, setCategories] = useState<CategoryDefinition[]>(
+    DEFAULT_CATEGORY_DEFINITIONS.slice(),
   );
   const [activeCats, setActiveCats] = useState<Set<Category>>(new Set());
   const [openNowOnly, setOpenNowOnly] = useState(false);
@@ -36,6 +46,7 @@ export function App() {
   );
   const [selected, setSelected] = useState<Place | null>(null);
   const [editing, setEditing] = useState<Place | null>(null);
+  const [editingCategories, setEditingCategories] = useState(false);
   const [hasFitBounds, setHasFitBounds] = useState(false);
   const mapRef = useRef<MapHandle | null>(null);
   const userLocation = useUserLocation();
@@ -99,17 +110,70 @@ export function App() {
     });
   };
 
-  async function handleAddCategory(raw: Category): Promise<Category[]> {
+  async function handleAddCategory(
+    raw: Category,
+  ): Promise<CategoryDefinition[]> {
     const category = normalizeCategoryName(raw);
     if (!category) return categories;
     const existing = categories.find(
-      (c) => c.toLowerCase() === category.toLowerCase(),
+      (c) => c.name.toLowerCase() === category.toLowerCase(),
     );
     if (existing) return categories;
     try {
       const { categories: next } = await api.addCategory(category);
       setCategories(next);
       return next;
+    } catch (err) {
+      if (err instanceof UnauthorizedError) setAuthed(false);
+      throw err;
+    }
+  }
+
+  async function handleUpdateCategory(
+    currentName: Category,
+    category: CategoryDefinition,
+  ) {
+    try {
+      const { categories: nextCategories, places: nextPlaces } =
+        await api.updateCategory(currentName, category);
+      setCategories(nextCategories);
+      setPlaces(nextPlaces);
+      setActiveCats((prev) => {
+        const next = new Set<Category>();
+        for (const active of prev) {
+          next.add(active === currentName ? category.name : active);
+        }
+        return next;
+      });
+      if (selected?.category === currentName) {
+        setSelected(nextPlaces.find((p) => p.id === selected.id) ?? null);
+      }
+      if (editing?.category === currentName) {
+        setEditing(nextPlaces.find((p) => p.id === editing.id) ?? null);
+      }
+    } catch (err) {
+      if (err instanceof UnauthorizedError) setAuthed(false);
+      throw err;
+    }
+  }
+
+  async function handleDeleteCategory(category: Category) {
+    try {
+      const { categories: nextCategories, places: nextPlaces } =
+        await api.deleteCategory(category);
+      setCategories(nextCategories);
+      setPlaces(nextPlaces);
+      setActiveCats((prev) => {
+        const next = new Set(prev);
+        next.delete(category);
+        return next;
+      });
+      if (selected?.category === category) {
+        setSelected(nextPlaces.find((p) => p.id === selected.id) ?? null);
+      }
+      if (editing?.category === category) {
+        setEditing(nextPlaces.find((p) => p.id === editing.id) ?? null);
+      }
     } catch (err) {
       if (err instanceof UnauthorizedError) setAuthed(false);
       throw err;
@@ -157,9 +221,12 @@ export function App() {
       const { place } = await api.createPlace(draft);
       setPlaces((prev) => [...prev, place]);
       setCategories((prev) =>
-        prev.some((c) => c.toLowerCase() === place.category.toLowerCase())
+        prev.some((c) => c.name.toLowerCase() === place.category.toLowerCase())
           ? prev
-          : [...prev, place.category],
+          : [
+              ...prev,
+              { name: place.category, emoji: '📍', color: '#6B7280' },
+            ],
       );
       mapRef.current?.flyTo({ lat: place.lat, lng: place.lng, zoom: 14 });
     } catch (err) {
@@ -173,9 +240,12 @@ export function App() {
       const { place } = await api.updatePlace(editing.id, patch);
       setPlaces((prev) => prev.map((p) => (p.id === place.id ? place : p)));
       setCategories((prev) =>
-        prev.some((c) => c.toLowerCase() === place.category.toLowerCase())
+        prev.some((c) => c.name.toLowerCase() === place.category.toLowerCase())
           ? prev
-          : [...prev, place.category],
+          : [
+              ...prev,
+              { name: place.category, emoji: '📍', color: '#6B7280' },
+            ],
       );
       setSelected(place);
     } catch (err) {
@@ -219,6 +289,7 @@ export function App() {
         <Map
           ref={mapRef}
           places={visiblePlaces}
+          categories={categories}
           onPickPlace={setSelected}
           maptilerKey={maptilerKey}
           userLocation={userLocation}
@@ -232,6 +303,7 @@ export function App() {
         <div className="absolute inset-0 bg-cream pt-[4.75rem]">
           <ListView
             places={visiblePlaces}
+            categories={categories}
             userLocation={userLocation}
             onPick={setSelected}
           />
@@ -279,6 +351,7 @@ export function App() {
             onToggleOpenNow={() => setOpenNowOnly((v) => !v)}
             categories={categories}
             places={places}
+            onEditCategories={() => setEditingCategories(true)}
             onLogout={() => setAuthed(false)}
           />
         </div>
@@ -294,6 +367,7 @@ export function App() {
 
       <PlaceSheet
         place={selected}
+        categories={categories}
         onClose={() => setSelected(null)}
         onEdit={(p) => {
           setSelected(null);
@@ -309,6 +383,14 @@ export function App() {
         categories={categories}
         onAddCategory={handleAddCategory}
         onSave={handleEditSave}
+      />
+
+      <CategoryManagerSheet
+        open={editingCategories}
+        categories={categories}
+        onClose={() => setEditingCategories(false)}
+        onUpdate={handleUpdateCategory}
+        onDelete={handleDeleteCategory}
       />
     </div>
   );

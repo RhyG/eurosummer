@@ -1,6 +1,7 @@
 import { clearToken, getToken } from './auth';
 import type {
   Category,
+  CategoryDefinition,
   Place,
   PlaceDetails,
   PlaceInfo,
@@ -56,14 +57,32 @@ export const api = {
     return request('/api/places');
   },
 
-  listCategories(): Promise<{ categories: Category[] }> {
+  listCategories(): Promise<{ categories: CategoryDefinition[] }> {
     return request('/api/categories');
   },
 
-  addCategory(category: Category): Promise<{ categories: Category[] }> {
+  addCategory(category: Category): Promise<{ categories: CategoryDefinition[] }> {
     return request('/api/categories', {
       method: 'POST',
       body: JSON.stringify({ category }),
+    });
+  },
+
+  updateCategory(
+    currentName: Category,
+    category: CategoryDefinition,
+  ): Promise<{ categories: CategoryDefinition[]; places: Place[] }> {
+    return request(`/api/categories/${encodeURIComponent(currentName)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(category),
+    });
+  },
+
+  deleteCategory(
+    category: Category,
+  ): Promise<{ categories: CategoryDefinition[]; places: Place[] }> {
+    return request(`/api/categories/${encodeURIComponent(category)}`, {
+      method: 'DELETE',
     });
   },
 

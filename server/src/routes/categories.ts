@@ -1,6 +1,14 @@
 import { Hono } from 'hono';
-import { addCategory, listCategories } from '../store.js';
-import { normalizeCategoryName } from '../categories.js';
+import {
+  addCategory,
+  deleteCategory,
+  listCategories,
+  updateCategory,
+} from '../store.js';
+import {
+  normalizeCategoryDefinition,
+  normalizeCategoryName,
+} from '../categories.js';
 
 export const categoryRoutes = new Hono();
 
@@ -25,4 +33,24 @@ categoryRoutes.post('/', async (c) => {
   if (!category) return c.json({ error: 'invalid_category' }, 400);
   const categories = await addCategory(category);
   return c.json({ categories }, 201);
+});
+
+categoryRoutes.patch('/:name', async (c) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'invalid_json' }, 400);
+  }
+  const next = normalizeCategoryDefinition(body);
+  if (!next) return c.json({ error: 'invalid_category' }, 400);
+  const result = await updateCategory(c.req.param('name'), next);
+  if (!result) return c.json({ error: 'not_found_or_duplicate' }, 400);
+  return c.json(result);
+});
+
+categoryRoutes.delete('/:name', async (c) => {
+  const result = await deleteCategory(c.req.param('name'));
+  if (!result) return c.json({ error: 'not_found_or_protected' }, 400);
+  return c.json(result);
 });

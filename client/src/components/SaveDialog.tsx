@@ -15,13 +15,18 @@ import { CategoryPicker } from './CategoryPicker';
 import { getCategoryMeta } from '@/lib/categories';
 import { appleMapsUrl } from '@/lib/appleMaps';
 import { api, UnauthorizedError } from '@/lib/api';
-import type { Category, PlaceDetails, PlaceInfo } from '@/types';
+import type {
+  Category,
+  CategoryDefinition,
+  PlaceDetails,
+  PlaceInfo,
+} from '@/types';
 
 type Props = {
   details: PlaceDetails | null;
   onClose: () => void;
-  categories: Category[];
-  onAddCategory: (category: Category) => Promise<Category[]> | void;
+  categories: CategoryDefinition[];
+  onAddCategory: (category: Category) => Promise<CategoryDefinition[]> | void;
   onSave: (data: {
     category: Category;
     notes: string;
@@ -109,7 +114,7 @@ export function SaveDialog({
   }, [details, onClose]);
 
   if (!details) return null;
-  const selectedMeta = getCategoryMeta(category);
+  const selectedMeta = getCategoryMeta(category, categories);
   const priceLabel = info?.priceLevel ? PRICE_LABELS[info.priceLevel] : null;
   const todayIdx = todayWeekdayIndex();
   const todayHours = info?.weekdayDescriptions?.[todayIdx] ?? null;

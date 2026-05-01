@@ -1,5 +1,11 @@
 export type Category = string;
 
+export type CategoryDefinition = {
+  name: Category;
+  emoji: string;
+  color: string;
+};
+
 export type TimeOfWeek = { day: number; hour: number; minute: number };
 export type OpeningPeriod = { open: TimeOfWeek; close?: TimeOfWeek };
 

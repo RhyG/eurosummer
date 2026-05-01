@@ -1,62 +1,47 @@
-import type { Category } from "@/types";
+import type { Category, CategoryDefinition } from '@/types';
 
-export const DEFAULT_CATEGORIES: readonly Category[] = [
-  "American",
-  "Japanese",
-  "Italian",
-  "Mexican",
-  "Thai",
-  "Vietnamese",
-  "Burgers",
-  "Indian",
-  "Bakery",
-  "Cafe",
-  "Bar",
-  "Other",
+export const DEFAULT_CATEGORY_DEFINITIONS: readonly CategoryDefinition[] = [
+  { name: 'American', emoji: '🍔', color: '#A84C3D' },
+  { name: 'Japanese', emoji: '🍣', color: '#3C6E71' },
+  { name: 'Italian', emoji: '🍝', color: '#C65D3A' },
+  { name: 'Mexican', emoji: '🌮', color: '#D1902F' },
+  { name: 'Thai', emoji: '🌶️', color: '#B94E5E' },
+  { name: 'Vietnamese', emoji: '🍜', color: '#4F7A45' },
+  { name: 'Burgers', emoji: '🍔', color: '#8B5E34' },
+  { name: 'Indian', emoji: '🍛', color: '#C77728' },
+  { name: 'Bakery', emoji: '🥐', color: '#D9B382' },
+  { name: 'Cafe', emoji: '☕', color: '#8C6A4A' },
+  { name: 'Bar', emoji: '🍷', color: '#6B7C3A' },
+  { name: 'Other', emoji: '📍', color: '#6B7280' },
 ];
 
-type CategoryMeta = {
+export type CategoryMeta = {
   label: string;
   emoji: string;
   color: string;
 };
 
-const KNOWN_CATEGORY_META: Record<string, CategoryMeta> = {
-  American: { label: "American", emoji: "🍔", color: "#A84C3D" },
-  Japanese: { label: "Japanese", emoji: "🍣", color: "#3C6E71" },
-  Italian: { label: "Italian", emoji: "🍝", color: "#C65D3A" },
-  Mexican: { label: "Mexican", emoji: "🌮", color: "#D1902F" },
-  Thai: { label: "Thai", emoji: "🌶️", color: "#B94E5E" },
-  Vietnamese: { label: "Vietnamese", emoji: "🍜", color: "#4F7A45" },
-  Burgers: { label: "Burgers", emoji: "🍔", color: "#8B5E34" },
-  Indian: { label: "Indian", emoji: "🍛", color: "#C77728" },
-  Bakery: { label: "Bakery", emoji: "🥐", color: "#D9B382" },
-  Cafe: { label: "Cafe", emoji: "☕", color: "#6eb829" },
-  Bar: { label: "Bar", emoji: "🍷", color: "#6B7C3A" },
-  Other: { label: "Other", emoji: "📍", color: "#6B7280" },
-};
-
 const FALLBACK_COLORS = [
-  "#6B7280",
-  "#4F7A45",
-  "#3C6E71",
-  "#8B5E34",
-  "#A84C3D",
-  "#B94E5E",
-  "#C77728",
-  "#6B7C3A",
+  '#6B7280',
+  '#4F7A45',
+  '#3C6E71',
+  '#8B5E34',
+  '#A84C3D',
+  '#B94E5E',
+  '#C77728',
+  '#6B7C3A',
 ];
 
 export function normalizeCategoryName(value: string): Category {
-  return value.trim().replace(/\s+/g, " ");
+  return value.trim().replace(/\s+/g, ' ');
 }
 
 function titleCase(value: string): string {
   return value
-    .split(" ")
+    .split(' ')
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+    .join(' ');
 }
 
 function colorForCategory(category: Category): string {
@@ -67,12 +52,18 @@ function colorForCategory(category: Category): string {
   return FALLBACK_COLORS[hash % FALLBACK_COLORS.length]!;
 }
 
-export function getCategoryMeta(category: Category): CategoryMeta {
-  return (
-    KNOWN_CATEGORY_META[category] ?? {
-      label: titleCase(category),
-      emoji: "📍",
-      color: colorForCategory(category),
-    }
+export function getCategoryMeta(
+  category: Category,
+  categories: readonly CategoryDefinition[] = DEFAULT_CATEGORY_DEFINITIONS,
+): CategoryMeta {
+  const match = categories.find(
+    (c) => c.name.toLowerCase() === category.toLowerCase(),
   );
+  return match
+    ? { label: match.name, emoji: match.emoji, color: match.color }
+    : {
+        label: titleCase(category),
+        emoji: '📍',
+        color: colorForCategory(category),
+      };
 }

@@ -8,13 +8,13 @@ import {
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 import { CategoryPicker } from './CategoryPicker';
-import type { Category, Place } from '@/types';
+import type { Category, CategoryDefinition, Place } from '@/types';
 
 type Props = {
   place: Place | null;
-  categories: Category[];
+  categories: CategoryDefinition[];
   onClose: () => void;
-  onAddCategory: (category: Category) => Promise<Category[]> | void;
+  onAddCategory: (category: Category) => Promise<CategoryDefinition[]> | void;
   onSave: (patch: Partial<Place>) => Promise<void> | void;
 };
 
@@ -53,7 +53,7 @@ export function EditDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogTitle>Edit place</DialogTitle>
         <DialogDescription>{place.address}</DialogDescription>
 

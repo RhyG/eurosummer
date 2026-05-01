@@ -17,10 +17,11 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import type { Place, PlaceInfo } from '@/types';
+import type { CategoryDefinition, Place, PlaceInfo } from '@/types';
 
 type Props = {
   place: Place | null;
+  categories: CategoryDefinition[];
   onClose: () => void;
   onEdit: (p: Place) => void;
   onDelete: (id: string) => Promise<void> | void;
@@ -43,6 +44,7 @@ function todayWeekdayIndex(): number {
 
 export function PlaceSheet({
   place,
+  categories,
   onClose,
   onEdit,
   onDelete,
@@ -79,7 +81,7 @@ export function PlaceSheet({
   }, [place?.id, place?.googlePlaceId]);
 
   if (!place) return null;
-  const meta = getCategoryMeta(place.category);
+  const meta = getCategoryMeta(place.category, categories);
   const priceLabel = info?.priceLevel ? PRICE_LABELS[info.priceLevel] : null;
   const todayIdx = todayWeekdayIndex();
   const todayHours = info?.weekdayDescriptions?.[todayIdx] ?? null;

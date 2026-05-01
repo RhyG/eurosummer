@@ -5,7 +5,7 @@ import maplibregl, {
   LngLatBoundsLike,
 } from 'maplibre-gl';
 import { getCategoryMeta } from '@/lib/categories';
-import type { Place } from '@/types';
+import type { CategoryDefinition, Place } from '@/types';
 
 const DEFAULT_MAP_VIEW = {
   lat: 20,
@@ -31,6 +31,7 @@ export type MapHandle = {
 
 type Props = {
   places: Place[];
+  categories: CategoryDefinition[];
   onPickPlace: (place: Place) => void;
   previewLocation: { lat: number; lng: number } | null;
   maptilerKey: string | null;
@@ -38,7 +39,7 @@ type Props = {
 };
 
 export const Map = forwardRef<MapHandle, Props>(function Map(
-  { places, onPickPlace, previewLocation, maptilerKey, userLocation },
+  { places, categories, onPickPlace, previewLocation, maptilerKey, userLocation },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -188,7 +189,7 @@ export const Map = forwardRef<MapHandle, Props>(function Map(
       map.on('mouseleave', 'clusters', setCursor(''));
 
       // Push initial places.
-      const data = placesToGeoJSON(placesRef.current);
+      const data = placesToGeoJSON(placesRef.current, categories);
       (map.getSource('places') as GeoJSONSource).setData(data);
     });
 
@@ -221,8 +222,8 @@ export const Map = forwardRef<MapHandle, Props>(function Map(
     if (!map) return;
     const source = map.getSource('places') as GeoJSONSource | undefined;
     if (!source) return;
-    source.setData(placesToGeoJSON(places));
-  }, [places]);
+    source.setData(placesToGeoJSON(places, categories));
+  }, [places, categories]);
 
   // Show a temporary preview marker (e.g. for a place being added).
   useEffect(() => {
@@ -248,7 +249,10 @@ export const Map = forwardRef<MapHandle, Props>(function Map(
   return <div ref={containerRef} className="absolute inset-0" />;
 });
 
-function placesToGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
+function placesToGeoJSON(
+  places: Place[],
+  categories: readonly CategoryDefinition[],
+): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: places.map((p) => ({
@@ -258,7 +262,7 @@ function placesToGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
         id: p.id,
         name: p.name,
         category: p.category,
-        color: getCategoryMeta(p.category).color,
+        color: getCategoryMeta(p.category, categories).color,
         visited: p.visited,
       },
     })),

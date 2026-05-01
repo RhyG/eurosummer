@@ -7,13 +7,13 @@ import {
   normalizeCategoryName,
 } from '@/lib/categories';
 import { cn } from '@/lib/utils';
-import type { Category } from '@/types';
+import type { Category, CategoryDefinition } from '@/types';
 
 type Props = {
-  categories: Category[];
+  categories: CategoryDefinition[];
   value: Category;
   onChange: (category: Category) => void;
-  onAddCategory: (category: Category) => Promise<Category[]> | void;
+  onAddCategory: (category: Category) => Promise<CategoryDefinition[]> | void;
 };
 
 export function CategoryPicker({
@@ -28,7 +28,8 @@ export function CategoryPicker({
   async function addCategory() {
     const normalized = normalizeCategoryName(draft);
     const category =
-      categories.find((c) => c.toLowerCase() === normalized.toLowerCase()) ??
+      categories.find((c) => c.name.toLowerCase() === normalized.toLowerCase())
+        ?.name ??
       normalized;
     if (!category) return;
     setAdding(true);
@@ -43,14 +44,14 @@ export function CategoryPicker({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-1 flex max-h-36 flex-row flex-wrap gap-2 overflow-y-auto px-1 py-1 sm:max-h-44">
         {categories.map((c) => {
-          const meta = getCategoryMeta(c);
-          const on = c === value;
+          const meta = getCategoryMeta(c.name, categories);
+          const on = c.name === value;
           return (
             <button
-              key={c}
-              onClick={() => onChange(c)}
+              key={c.name}
+              onClick={() => onChange(c.name)}
               className={cn(
                 'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium border transition',
                 on

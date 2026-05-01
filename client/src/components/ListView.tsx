@@ -3,16 +3,17 @@ import { Check } from 'lucide-react';
 import { getCategoryMeta } from '@/lib/categories';
 import { formatDistance, haversineKm } from '@/lib/distance';
 import { isOpenNow } from '@/lib/openingHours';
-import type { Place } from '@/types';
+import type { CategoryDefinition, Place } from '@/types';
 import type { UserLocation } from '@/lib/userLocation';
 
 type Props = {
   places: Place[];
+  categories: CategoryDefinition[];
   userLocation: UserLocation;
   onPick: (place: Place) => void;
 };
 
-export function ListView({ places, userLocation, onPick }: Props) {
+export function ListView({ places, categories, userLocation, onPick }: Props) {
   const sorted = useMemo(() => {
     const arr = places.slice();
     if (userLocation) {
@@ -39,7 +40,7 @@ export function ListView({ places, userLocation, onPick }: Props) {
     <div className="h-full overflow-y-auto pb-6">
       <ul className="mx-auto w-full max-w-2xl space-y-1.5 p-3">
         {sorted.map((p) => {
-          const meta = getCategoryMeta(p.category);
+          const meta = getCategoryMeta(p.category, categories);
           const open = isOpenNow(p.openingPeriods);
           const distKm = userLocation ? haversineKm(userLocation, p) : null;
           return (

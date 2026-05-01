@@ -1,8 +1,12 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { env } from './env.js';
-import { mergeCategories, normalizeCategoryName } from './categories.js';
-import type { Category, Place, PlacesFile } from './types.js';
+import {
+  mergeCategoryDefinitions,
+  normalizeCategoryDefinition,
+  normalizeCategoryName,
+} from './categories.js';
+import type { Category, CategoryDefinition, Place, PlacesFile } from './types.js';
 
 const FILE = path.join(env.dataDir, 'places.json');
 const TMP = `${FILE}.tmp`;
@@ -14,7 +18,10 @@ async function ensureFile(): Promise<void> {
   try {
     await fs.access(FILE);
   } catch {
-    const empty: PlacesFile = { places: [], categories: mergeCategories([]) };
+    const empty: PlacesFile = {
+      places: [],
+      categories: mergeCategoryDefinitions([], true),
+    };
     await fs.writeFile(FILE, JSON.stringify(empty, null, 2), 'utf8');
   }
 }
@@ -74,7 +81,7 @@ function normalizePlace(value: unknown): Place | null {
 
 function normalizeFile(parsed: unknown): PlacesFile {
   if (!parsed || typeof parsed !== 'object') {
-    return { places: [], categories: mergeCategories([]) };
+    return { places: [], categories: mergeCategoryDefinitions([], true) };
   }
   const o = parsed as Record<string, unknown>;
   const places = Array.isArray(o.places)
@@ -82,9 +89,13 @@ function normalizeFile(parsed: unknown): PlacesFile {
     : [];
   const storedCategories = Array.isArray(o.categories) ? o.categories : [];
   const placeCategories = places.map((p) => p.category);
+  const includeDefaults = !Array.isArray(o.categories);
   return {
     places,
-    categories: mergeCategories([...storedCategories, ...placeCategories]),
+    categories: mergeCategoryDefinitions(
+      [...storedCategories, ...placeCategories],
+      includeDefaults,
+    ),
   };
 }
 
@@ -94,7 +105,7 @@ async function readFile(): Promise<PlacesFile> {
   try {
     return normalizeFile(JSON.parse(raw));
   } catch {
-    return { places: [], categories: mergeCategories([]) };
+    return { places: [], categories: mergeCategoryDefinitions([], true) };
   }
 }
 
@@ -118,17 +129,79 @@ export async function listPlaces(): Promise<Place[]> {
   return data.places;
 }
 
-export async function listCategories(): Promise<Category[]> {
+export async function listCategories(): Promise<CategoryDefinition[]> {
   const data = await readFile();
-  return data.categories ?? mergeCategories([]);
+  return mergeCategoryDefinitions(data.categories ?? []);
 }
 
-export async function addCategory(category: Category): Promise<Category[]> {
+export async function addCategory(
+  category: Category,
+): Promise<CategoryDefinition[]> {
   return enqueue(async () => {
     const data = await readFile();
-    data.categories = mergeCategories([...(data.categories ?? []), category]);
+    data.categories = mergeCategoryDefinitions([
+      ...(data.categories ?? []),
+      category,
+    ]);
     await writeFile(data);
-    return data.categories;
+    return mergeCategoryDefinitions(data.categories);
+  });
+}
+
+export async function updateCategory(
+  currentName: Category,
+  nextDefinition: CategoryDefinition,
+): Promise<{ categories: CategoryDefinition[]; places: Place[] } | null> {
+  return enqueue(async () => {
+    const data = await readFile();
+    const categories = mergeCategoryDefinitions(data.categories ?? []);
+    const current = normalizeCategoryName(currentName);
+    const next = normalizeCategoryDefinition(nextDefinition);
+    if (!current || !next) return null;
+    if (current.toLowerCase() === 'other' && next.name !== 'Other') {
+      return null;
+    }
+    const idx = categories.findIndex(
+      (category) => category.name.toLowerCase() === current.toLowerCase(),
+    );
+    if (idx === -1) return null;
+    const duplicate = categories.some(
+      (category, i) =>
+        i !== idx && category.name.toLowerCase() === next.name.toLowerCase(),
+    );
+    if (duplicate) return null;
+    categories[idx] = next;
+    data.places = data.places.map((place) =>
+      place.category.toLowerCase() === current.toLowerCase()
+        ? { ...place, category: next.name }
+        : place,
+    );
+    data.categories = mergeCategoryDefinitions(categories);
+    await writeFile(data);
+    return { categories: mergeCategoryDefinitions(data.categories), places: data.places };
+  });
+}
+
+export async function deleteCategory(
+  categoryName: Category,
+): Promise<{ categories: CategoryDefinition[]; places: Place[] } | null> {
+  return enqueue(async () => {
+    const data = await readFile();
+    const category = normalizeCategoryName(categoryName);
+    if (!category || category.toLowerCase() === 'other') return null;
+    const categories = mergeCategoryDefinitions(data.categories ?? []);
+    const nextCategories = categories.filter(
+      (item) => item.name.toLowerCase() !== category.toLowerCase(),
+    );
+    if (nextCategories.length === categories.length) return null;
+    data.places = data.places.map((place) =>
+      place.category.toLowerCase() === category.toLowerCase()
+        ? { ...place, category: 'Other' }
+        : place,
+    );
+    data.categories = mergeCategoryDefinitions(nextCategories);
+    await writeFile(data);
+    return { categories: mergeCategoryDefinitions(data.categories), places: data.places };
   });
 }
 
@@ -141,7 +214,10 @@ export async function createPlace(place: Place): Promise<Place> {
   return enqueue(async () => {
     const data = await readFile();
     const next = { ...place, category: normalizeCategoryName(place.category) };
-    data.categories = mergeCategories([...(data.categories ?? []), next.category]);
+    data.categories = mergeCategoryDefinitions([
+      ...(data.categories ?? []),
+      next.category,
+    ]);
     data.places.push(next);
     await writeFile(data);
     return next;
@@ -167,7 +243,10 @@ export async function updatePlace(
           : existing.category,
     };
     data.places[idx] = next;
-    data.categories = mergeCategories([...(data.categories ?? []), next.category]);
+    data.categories = mergeCategoryDefinitions([
+      ...(data.categories ?? []),
+      next.category,
+    ]);
     await writeFile(data);
     return next;
   });
