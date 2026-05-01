@@ -79,6 +79,21 @@ function normalizePlace(value: unknown): Place | null {
   };
 }
 
+function appendMissingCategories(
+  categories: CategoryDefinition[],
+  values: readonly unknown[],
+): CategoryDefinition[] {
+  const next = categories.slice();
+  const seen = new Set(next.map((category) => category.name.toLowerCase()));
+  for (const value of values) {
+    const category = normalizeCategoryDefinition(value);
+    if (!category || seen.has(category.name.toLowerCase())) continue;
+    seen.add(category.name.toLowerCase());
+    next.push(category);
+  }
+  return next;
+}
+
 function normalizeFile(parsed: unknown): PlacesFile {
   if (!parsed || typeof parsed !== 'object') {
     return { places: [], categories: mergeCategoryDefinitions([], true) };
@@ -90,12 +105,13 @@ function normalizeFile(parsed: unknown): PlacesFile {
   const storedCategories = Array.isArray(o.categories) ? o.categories : [];
   const placeCategories = places.map((p) => p.category);
   const includeDefaults = !Array.isArray(o.categories);
+  const categories = mergeCategoryDefinitions(
+    storedCategories,
+    includeDefaults,
+  );
   return {
     places,
-    categories: mergeCategoryDefinitions(
-      [...storedCategories, ...placeCategories],
-      includeDefaults,
-    ),
+    categories: appendMissingCategories(categories, placeCategories),
   };
 }
 
@@ -139,10 +155,10 @@ export async function addCategory(
 ): Promise<CategoryDefinition[]> {
   return enqueue(async () => {
     const data = await readFile();
-    data.categories = mergeCategoryDefinitions([
-      ...(data.categories ?? []),
-      category,
-    ]);
+    data.categories = appendMissingCategories(
+      mergeCategoryDefinitions(data.categories ?? []),
+      [category],
+    );
     await writeFile(data);
     return mergeCategoryDefinitions(data.categories);
   });
@@ -214,10 +230,10 @@ export async function createPlace(place: Place): Promise<Place> {
   return enqueue(async () => {
     const data = await readFile();
     const next = { ...place, category: normalizeCategoryName(place.category) };
-    data.categories = mergeCategoryDefinitions([
-      ...(data.categories ?? []),
-      next.category,
-    ]);
+    data.categories = appendMissingCategories(
+      mergeCategoryDefinitions(data.categories ?? []),
+      [next.category],
+    );
     data.places.push(next);
     await writeFile(data);
     return next;
@@ -243,10 +259,10 @@ export async function updatePlace(
           : existing.category,
     };
     data.places[idx] = next;
-    data.categories = mergeCategoryDefinitions([
-      ...(data.categories ?? []),
-      next.category,
-    ]);
+    data.categories = appendMissingCategories(
+      mergeCategoryDefinitions(data.categories ?? []),
+      [next.category],
+    );
     await writeFile(data);
     return next;
   });
