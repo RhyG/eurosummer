@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { env } from '../env.js';
-import type { Category, Country, OpeningPeriod } from '../types.js';
+import type { Category, OpeningPeriod } from '../types.js';
 
 const AUTOCOMPLETE_URL =
   'https://places.googleapis.com/v1/places:autocomplete';
@@ -113,15 +113,27 @@ function normalizePhotoNames(photos: GooglePhoto[] | undefined): string[] | null
 
 function categoryFromTypes(types: string[]): Category {
   const set = new Set(types);
-  if (set.has('bakery')) return 'bakery';
-  if (set.has('cafe') || set.has('coffee_shop')) return 'cafe';
+  if (set.has('bakery')) return 'Bakery';
+  if (set.has('cafe') || set.has('coffee_shop')) return 'Cafe';
+  if (set.has('hamburger_restaurant')) return 'Burgers';
+  if (set.has('japanese_restaurant') || set.has('sushi_restaurant')) {
+    return 'Japanese';
+  }
+  if (set.has('italian_restaurant') || set.has('pizza_restaurant')) {
+    return 'Italian';
+  }
+  if (set.has('mexican_restaurant')) return 'Mexican';
+  if (set.has('thai_restaurant')) return 'Thai';
+  if (set.has('vietnamese_restaurant')) return 'Vietnamese';
+  if (set.has('indian_restaurant')) return 'Indian';
+  if (set.has('american_restaurant')) return 'American';
   if (
     set.has('bar') ||
     set.has('night_club') ||
     set.has('wine_bar') ||
     set.has('pub')
   ) {
-    return 'bar';
+    return 'Bar';
   }
   if (
     set.has('restaurant') ||
@@ -130,24 +142,32 @@ function categoryFromTypes(types: string[]): Category {
     set.has('meal_delivery') ||
     Array.from(set).some((t) => t.endsWith('_restaurant'))
   ) {
-    return 'restaurant';
+    return 'Other';
   }
-  return 'other';
+  return 'Other';
 }
 
-function countryFromComponents(
+function localityFromComponents(
   components: GoogleDetailsResp['addressComponents'],
-): Country {
-  if (!components) return 'other';
-  for (const c of components) {
-    if (c.types?.includes('country')) {
-      const code = (c.shortText ?? '').toUpperCase();
-      if (code === 'IT') return 'italy';
-      if (code === 'GR') return 'greece';
-      return 'other';
-    }
+): string | null {
+  if (!components) return null;
+  const preferredTypes = [
+    'locality',
+    'postal_town',
+    'administrative_area_level_3',
+    'administrative_area_level_2',
+    'sublocality',
+  ];
+  for (const type of preferredTypes) {
+    const match = components.find((c) => c.types?.includes(type));
+    const text = match?.longText ?? match?.shortText;
+    if (text) return text;
   }
-  return 'other';
+  for (const c of components) {
+    const text = c.longText ?? c.shortText;
+    if (text) return text;
+  }
+  return null;
 }
 
 export const searchRoutes = new Hono();
@@ -296,7 +316,7 @@ searchRoutes.get('/details/:placeId', async (c) => {
     lat: data.location?.latitude ?? 0,
     lng: data.location?.longitude ?? 0,
     suggestedCategory: categoryFromTypes(types),
-    country: countryFromComponents(data.addressComponents),
+    locality: localityFromComponents(data.addressComponents),
     openingPeriods: normalizePeriods(data.regularOpeningHours),
     photoNames: normalizePhotoNames(data.photos),
   });

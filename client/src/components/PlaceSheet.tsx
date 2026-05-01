@@ -1,6 +1,6 @@
 import { Drawer } from 'vaul';
 import { useEffect, useState } from 'react';
-import { CATEGORY_META, COUNTRY_META } from '@/lib/categories';
+import { getCategoryMeta } from '@/lib/categories';
 import { appleMapsUrl } from '@/lib/appleMaps';
 import { api, UnauthorizedError } from '@/lib/api';
 import { Button } from './ui/Button';
@@ -79,8 +79,7 @@ export function PlaceSheet({
   }, [place?.id, place?.googlePlaceId]);
 
   if (!place) return null;
-  const meta = CATEGORY_META[place.category];
-  const country = COUNTRY_META[place.country];
+  const meta = getCategoryMeta(place.category);
   const priceLabel = info?.priceLevel ? PRICE_LABELS[info.priceLevel] : null;
   const todayIdx = todayWeekdayIndex();
   const todayHours = info?.weekdayDescriptions?.[todayIdx] ?? null;
@@ -112,12 +111,13 @@ export function PlaceSheet({
                 style={{ backgroundColor: meta.color }}
               >
                 <span>{meta.emoji}</span>
-                {meta.label.replace(/s$/, '')}
+                {meta.label}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-ink/5 px-2.5 py-1 text-xs">
-                <span>{country.flag}</span>
-                {country.label}
-              </span>
+              {place.locality && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-ink/5 px-2.5 py-1 text-xs">
+                  {place.locality}
+                </span>
+              )}
               {place.visited && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs text-emerald-700">
                   <Check className="h-3 w-3" /> visited

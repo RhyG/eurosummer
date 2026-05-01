@@ -4,12 +4,12 @@ import { Map, type MapHandle } from './components/Map';
 import { ListView } from './components/ListView';
 import { SearchBar } from './components/SearchBar';
 import { FiltersMenu } from './components/FiltersMenu';
-import { CityJump } from './components/CityJump';
+import { LocationJump } from './components/LocationJump';
 import { PasswordGate } from './components/PasswordGate';
 import { SaveDialog } from './components/SaveDialog';
 import { PlaceSheet } from './components/PlaceSheet';
 import { EditDialog } from './components/EditDialog';
-import { CATEGORIES } from './lib/categories';
+import { DEFAULT_CATEGORIES, normalizeCategoryName } from './lib/categories';
 import { getToken } from './lib/auth';
 import { api, UnauthorizedError } from './lib/api';
 import { isOpenNow } from './lib/openingHours';
@@ -25,6 +25,9 @@ export function App() {
     undefined,
   );
   const [places, setPlaces] = useState<Place[]>([]);
+  const [categories, setCategories] = useState<Category[]>(
+    DEFAULT_CATEGORIES.slice(),
+  );
   const [activeCats, setActiveCats] = useState<Set<Category>>(new Set());
   const [openNowOnly, setOpenNowOnly] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('map');
@@ -39,8 +42,12 @@ export function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const { places } = await api.listPlaces();
+      const [{ places }, { categories }] = await Promise.all([
+        api.listPlaces(),
+        api.listCategories(),
+      ]);
       setPlaces(places);
+      setCategories(categories);
     } catch (err) {
       if (err instanceof UnauthorizedError) setAuthed(false);
     }
@@ -92,6 +99,23 @@ export function App() {
     });
   };
 
+  async function handleAddCategory(raw: Category): Promise<Category[]> {
+    const category = normalizeCategoryName(raw);
+    if (!category) return categories;
+    const existing = categories.find(
+      (c) => c.toLowerCase() === category.toLowerCase(),
+    );
+    if (existing) return categories;
+    try {
+      const { categories: next } = await api.addCategory(category);
+      setCategories(next);
+      return next;
+    } catch (err) {
+      if (err instanceof UnauthorizedError) setAuthed(false);
+      throw err;
+    }
+  }
+
   async function handlePickPrediction(p: Prediction) {
     try {
       const details = await api.details(p.placeId);
@@ -121,7 +145,7 @@ export function App() {
       address: pendingDetails.address,
       lat: pendingDetails.lat,
       lng: pendingDetails.lng,
-      country: pendingDetails.country,
+      locality: pendingDetails.locality ?? undefined,
       googlePlaceId: pendingDetails.googlePlaceId,
       category,
       notes: notes || undefined,
@@ -132,6 +156,11 @@ export function App() {
     try {
       const { place } = await api.createPlace(draft);
       setPlaces((prev) => [...prev, place]);
+      setCategories((prev) =>
+        prev.some((c) => c.toLowerCase() === place.category.toLowerCase())
+          ? prev
+          : [...prev, place.category],
+      );
       mapRef.current?.flyTo({ lat: place.lat, lng: place.lng, zoom: 14 });
     } catch (err) {
       if (err instanceof UnauthorizedError) setAuthed(false);
@@ -143,6 +172,11 @@ export function App() {
     try {
       const { place } = await api.updatePlace(editing.id, patch);
       setPlaces((prev) => prev.map((p) => (p.id === place.id ? place : p)));
+      setCategories((prev) =>
+        prev.some((c) => c.toLowerCase() === place.category.toLowerCase())
+          ? prev
+          : [...prev, place.category],
+      );
       setSelected(place);
     } catch (err) {
       if (err instanceof UnauthorizedError) setAuthed(false);
@@ -216,7 +250,8 @@ export function App() {
               }}
             />
           </div>
-          <CityJump
+          <LocationJump
+            places={places}
             onJump={(c) => {
               setViewMode('map');
               mapRef.current?.flyTo({
@@ -242,6 +277,7 @@ export function App() {
             toggle={toggleCat}
             openNowOnly={openNowOnly}
             onToggleOpenNow={() => setOpenNowOnly((v) => !v)}
+            categories={categories}
             places={places}
             onLogout={() => setAuthed(false)}
           />
@@ -251,6 +287,8 @@ export function App() {
       <SaveDialog
         details={pendingDetails}
         onClose={() => setPendingDetails(null)}
+        categories={categories}
+        onAddCategory={handleAddCategory}
         onSave={handleSaveNew}
       />
 
@@ -268,6 +306,8 @@ export function App() {
       <EditDialog
         place={editing}
         onClose={() => setEditing(null)}
+        categories={categories}
+        onAddCategory={handleAddCategory}
         onSave={handleEditSave}
       />
     </div>

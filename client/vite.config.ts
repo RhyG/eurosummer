@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'EatList',
         short_name: 'EatList',
-        description: 'Map of places to eat & drink in Italy and Greece',
+        description: 'Map of places to eat and drink anywhere',
         theme_color: '#C65D3A',
         background_color: '#F7F1E5',
         display: 'standalone',

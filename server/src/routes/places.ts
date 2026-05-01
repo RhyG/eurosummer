@@ -7,27 +7,13 @@ import {
   listPlaces,
   updatePlace,
 } from '../store.js';
-import type {
-  Category,
-  Country,
-  OpeningPeriod,
-  Place,
-} from '../types.js';
+import { normalizeCategoryName } from '../categories.js';
+import type { OpeningPeriod, Place } from '../types.js';
 
-const CATEGORIES: readonly Category[] = [
-  'restaurant',
-  'bar',
-  'cafe',
-  'bakery',
-  'other',
-];
-const COUNTRIES: readonly Country[] = ['italy', 'greece', 'other'];
-
-function isCategory(v: unknown): v is Category {
-  return typeof v === 'string' && (CATEGORIES as readonly string[]).includes(v);
-}
-function isCountry(v: unknown): v is Country {
-  return typeof v === 'string' && (COUNTRIES as readonly string[]).includes(v);
+function parseCategory(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const category = normalizeCategoryName(v);
+  return category || null;
 }
 
 function isTimeOfWeek(v: unknown): boolean {
@@ -59,17 +45,20 @@ function parseDraft(input: unknown): Omit<Place, 'id' | 'createdAt'> | null {
   if (!input || typeof input !== 'object') return null;
   const o = input as Record<string, unknown>;
   if (typeof o.name !== 'string' || !o.name.trim()) return null;
-  if (!isCategory(o.category)) return null;
-  if (!isCountry(o.country)) return null;
+  const category = parseCategory(o.category);
+  if (!category) return null;
   if (typeof o.lat !== 'number' || typeof o.lng !== 'number') return null;
   if (typeof o.address !== 'string') return null;
   return {
     name: o.name.trim(),
-    category: o.category,
-    country: o.country,
+    category,
     lat: o.lat,
     lng: o.lng,
     address: o.address,
+    locality:
+      typeof o.locality === 'string' && o.locality.trim()
+        ? o.locality.trim()
+        : undefined,
     notes: typeof o.notes === 'string' ? o.notes : undefined,
     sourceUrl: typeof o.sourceUrl === 'string' ? o.sourceUrl : undefined,
     visited: o.visited === true,
@@ -91,12 +80,9 @@ function parsePatch(input: unknown): Partial<Place> | null {
     patch.name = o.name.trim();
   }
   if (o.category !== undefined) {
-    if (!isCategory(o.category)) return null;
-    patch.category = o.category;
-  }
-  if (o.country !== undefined) {
-    if (!isCountry(o.country)) return null;
-    patch.country = o.country;
+    const category = parseCategory(o.category);
+    if (!category) return null;
+    patch.category = category;
   }
   if (o.lat !== undefined) {
     if (typeof o.lat !== 'number') return null;
@@ -109,6 +95,10 @@ function parsePatch(input: unknown): Partial<Place> | null {
   if (o.address !== undefined) {
     if (typeof o.address !== 'string') return null;
     patch.address = o.address;
+  }
+  if (o.locality !== undefined) {
+    if (typeof o.locality !== 'string') return null;
+    patch.locality = o.locality.trim() || undefined;
   }
   if (o.notes !== undefined) {
     if (typeof o.notes !== 'string') return null;

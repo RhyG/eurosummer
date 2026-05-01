@@ -1,5 +1,11 @@
 import { clearToken, getToken } from './auth';
-import type { Place, PlaceDetails, PlaceInfo, Prediction } from '@/types';
+import type {
+  Category,
+  Place,
+  PlaceDetails,
+  PlaceInfo,
+  Prediction,
+} from '@/types';
 
 class UnauthorizedError extends Error {
   constructor() {
@@ -48,6 +54,17 @@ export const api = {
 
   listPlaces(): Promise<{ places: Place[] }> {
     return request('/api/places');
+  },
+
+  listCategories(): Promise<{ categories: Category[] }> {
+    return request('/api/categories');
+  },
+
+  addCategory(category: Category): Promise<{ categories: Category[] }> {
+    return request('/api/categories', {
+      method: 'POST',
+      body: JSON.stringify({ category }),
+    });
   },
 
   createPlace(

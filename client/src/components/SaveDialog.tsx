@@ -11,15 +11,17 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Textarea } from './ui/Input';
-import { CATEGORIES, CATEGORY_META, COUNTRY_META } from '@/lib/categories';
+import { CategoryPicker } from './CategoryPicker';
+import { getCategoryMeta } from '@/lib/categories';
 import { appleMapsUrl } from '@/lib/appleMaps';
 import { api, UnauthorizedError } from '@/lib/api';
 import type { Category, PlaceDetails, PlaceInfo } from '@/types';
-import { cn } from '@/lib/utils';
 
 type Props = {
   details: PlaceDetails | null;
   onClose: () => void;
+  categories: Category[];
+  onAddCategory: (category: Category) => Promise<Category[]> | void;
   onSave: (data: {
     category: Category;
     notes: string;
@@ -40,10 +42,16 @@ function todayWeekdayIndex(): number {
   return (d + 6) % 7;
 }
 
-export function SaveDialog({ details, onClose, onSave }: Props) {
+export function SaveDialog({
+  details,
+  onClose,
+  categories,
+  onAddCategory,
+  onSave,
+}: Props) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [category, setCategory] = useState<Category>(
-    details?.suggestedCategory ?? 'restaurant',
+    details?.suggestedCategory ?? 'Other',
   );
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -101,8 +109,7 @@ export function SaveDialog({ details, onClose, onSave }: Props) {
   }, [details, onClose]);
 
   if (!details) return null;
-  const selectedMeta = CATEGORY_META[category];
-  const country = COUNTRY_META[details.country];
+  const selectedMeta = getCategoryMeta(category);
   const priceLabel = info?.priceLevel ? PRICE_LABELS[info.priceLevel] : null;
   const todayIdx = todayWeekdayIndex();
   const todayHours = info?.weekdayDescriptions?.[todayIdx] ?? null;
@@ -148,12 +155,13 @@ export function SaveDialog({ details, onClose, onSave }: Props) {
                 style={{ backgroundColor: selectedMeta.color }}
               >
                 <span>{selectedMeta.emoji}</span>
-                {selectedMeta.label.replace(/s$/, '')}
+                {selectedMeta.label}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-ink/5 px-2.5 py-1 text-xs">
-                <span>{country.flag}</span>
-                {country.label}
-              </span>
+              {details.locality && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-ink/5 px-2.5 py-1 text-xs">
+                  {details.locality}
+                </span>
+              )}
             </div>
 
             <h2 className="text-xl font-semibold leading-tight">
@@ -276,28 +284,12 @@ export function SaveDialog({ details, onClose, onSave }: Props) {
             <div className="mt-5 space-y-4">
               <div>
                 <p className="mb-2 text-sm font-medium">Category</p>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((c) => {
-                    const meta = CATEGORY_META[c];
-                    const on = c === category;
-                    return (
-                      <button
-                        key={c}
-                        onClick={() => setCategory(c)}
-                        className={cn(
-                          'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium border transition',
-                          on
-                            ? 'text-cream border-transparent'
-                            : 'bg-cream text-ink/70 border-ink/15 hover:bg-ink/5',
-                        )}
-                        style={on ? { backgroundColor: meta.color } : undefined}
-                      >
-                        <span>{meta.emoji}</span>
-                        {meta.label.replace(/s$/, '')}
-                      </button>
-                    );
-                  })}
-                </div>
+                <CategoryPicker
+                  categories={categories}
+                  value={category}
+                  onChange={setCategory}
+                  onAddCategory={onAddCategory}
+                />
               </div>
 
               <div>

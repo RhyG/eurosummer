@@ -1,6 +1,6 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import { Check, Clock, LogOut, SlidersHorizontal } from 'lucide-react';
-import { CATEGORIES, CATEGORY_META } from '@/lib/categories';
+import { getCategoryMeta } from '@/lib/categories';
 import { clearToken } from '@/lib/auth';
 import type { Category, Place } from '@/types';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ type Props = {
   toggle: (c: Category) => void;
   openNowOnly: boolean;
   onToggleOpenNow: () => void;
+  categories: Category[];
   places: Place[];
   onLogout: () => void;
 };
@@ -19,6 +20,7 @@ export function FiltersMenu({
   toggle,
   openNowOnly,
   onToggleOpenNow,
+  categories,
   places,
   onLogout,
 }: Props) {
@@ -68,8 +70,8 @@ export function FiltersMenu({
 
           <div className="my-1 h-px bg-ink/10" />
 
-          {CATEGORIES.map((c) => {
-            const meta = CATEGORY_META[c];
+          {categories.map((c) => {
+            const meta = getCategoryMeta(c);
             const on = active.has(c);
             const n = counts.get(c) ?? 0;
             return (

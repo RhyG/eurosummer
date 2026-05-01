@@ -7,6 +7,7 @@ import { promises as fs } from 'node:fs';
 import { requireAuth } from './auth.js';
 import { env } from './env.js';
 import { authRoutes } from './routes/auth.js';
+import { categoryRoutes } from './routes/categories.js';
 import { placeRoutes } from './routes/places.js';
 import { searchRoutes } from './routes/search.js';
 
@@ -25,6 +26,7 @@ apiAuthed.get('/config', (c) =>
   c.json({ maptilerKey: env.maptilerKey || null }),
 );
 apiAuthed.route('/places', placeRoutes);
+apiAuthed.route('/categories', categoryRoutes);
 apiAuthed.route('/search', searchRoutes);
 app.route('/api', apiAuthed);
 

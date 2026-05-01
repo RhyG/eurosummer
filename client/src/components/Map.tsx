@@ -4,9 +4,14 @@ import maplibregl, {
   GeoJSONSource,
   LngLatBoundsLike,
 } from 'maplibre-gl';
-import { CATEGORY_META } from '@/lib/categories';
-import { MEDITERRANEAN_VIEW } from '@/lib/cities';
+import { getCategoryMeta } from '@/lib/categories';
 import type { Place } from '@/types';
+
+const DEFAULT_MAP_VIEW = {
+  lat: 20,
+  lng: 0,
+  zoom: 1.5,
+};
 
 function styleUrl(key: string | null): string {
   return key
@@ -81,8 +86,8 @@ export const Map = forwardRef<MapHandle, Props>(function Map(
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: styleUrl(maptilerKey),
-      center: [MEDITERRANEAN_VIEW.lng, MEDITERRANEAN_VIEW.lat],
-      zoom: MEDITERRANEAN_VIEW.zoom,
+      center: [DEFAULT_MAP_VIEW.lng, DEFAULT_MAP_VIEW.lat],
+      zoom: DEFAULT_MAP_VIEW.zoom,
       attributionControl: { compact: true },
     });
     mapRef.current = map;
@@ -253,7 +258,7 @@ function placesToGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
         id: p.id,
         name: p.name,
         category: p.category,
-        color: CATEGORY_META[p.category].color,
+        color: getCategoryMeta(p.category).color,
         visited: p.visited,
       },
     })),

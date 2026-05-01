@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Check } from 'lucide-react';
-import { CATEGORY_META, COUNTRY_META } from '@/lib/categories';
+import { getCategoryMeta } from '@/lib/categories';
 import { formatDistance, haversineKm } from '@/lib/distance';
 import { isOpenNow } from '@/lib/openingHours';
 import type { Place } from '@/types';
@@ -39,8 +39,7 @@ export function ListView({ places, userLocation, onPick }: Props) {
     <div className="h-full overflow-y-auto pb-6">
       <ul className="mx-auto w-full max-w-2xl space-y-1.5 p-3">
         {sorted.map((p) => {
-          const meta = CATEGORY_META[p.category];
-          const country = COUNTRY_META[p.country];
+          const meta = getCategoryMeta(p.category);
           const open = isOpenNow(p.openingPeriods);
           const distKm = userLocation ? haversineKm(userLocation, p) : null;
           return (
@@ -66,7 +65,7 @@ export function ListView({ places, userLocation, onPick }: Props) {
                     {p.address}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink/60">
-                    <span>{country.flag}</span>
+                    {p.locality && <span>{p.locality}</span>}
                     {distKm != null && <span>{formatDistance(distKm)}</span>}
                     {open === true && (
                       <span className="font-medium text-emerald-700">

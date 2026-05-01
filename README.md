@@ -1,6 +1,6 @@
 # EatList
 
-A personal PWA for saving and viewing places to eat & drink on a map. Built for an Italy + Greece trip.
+A personal PWA for saving and viewing places to eat and drink on a map.
 
 ## Stack
 
@@ -47,7 +47,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 4. (Optional, recommended for production) Restrict the key under **Allowed origins** to your Fly URL, e.g. `https://eatlist.fly.dev`.
 5. Set it locally in `.env` as `MAPTILER_KEY=...`. For Fly, set it as a runtime secret: `fly secrets set MAPTILER_KEY=...`.
 
-Free tier: 100k tile requests / month. More than enough for a 2-week trip.
+Free tier: 100k tile requests / month.
 
 ---
 
@@ -69,7 +69,7 @@ Free tier: 100k tile requests / month. More than enough for a 2-week trip.
    - Application restrictions: leave as **None** for now (we proxy server-side, so the key never leaves Fly). If you want extra safety, add an IP restriction once your Fly app has a static outbound IP.
 7. Set as `GOOGLE_PLACES_API_KEY` in `.env` (local) and as a Fly secret (deploy).
 
-Cost: Autocomplete sessions ~$0.017 each, Place Details (Basic) ~$0.017. Google credits $200/mo of free usage on the Places API. A trip's worth of searches is pennies.
+Cost: Autocomplete sessions ~$0.017 each, Place Details (Basic) ~$0.017. Google credits $200/mo of free usage on the Places API.
 
 ---
 
